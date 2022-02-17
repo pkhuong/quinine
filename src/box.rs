@@ -25,7 +25,7 @@ impl<T> MonoBox<T> {
     ///
     /// Use [`Default::default()`] or [`MonoBox::empty()`] for a
     /// [`None`] initial value.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn new(inner: Option<Box<T>>) -> Self {
         let ptr = inner.map(Box::into_raw).unwrap_or_else(core::ptr::null_mut);
 
@@ -35,26 +35,26 @@ impl<T> MonoBox<T> {
     }
 
     /// Returns a fresh [`MonoBox`] that holds [`None`].
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn empty() -> Self {
         Self::new(None)
     }
 
     /// Returns whether the [`MonoBox`]'s value is [`None`].
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn is_none(&self) -> bool {
         self.ptr_or_null.load(Ordering::Relaxed).is_null()
     }
 
     /// Returns whether the [`MonoBox`]'s value is [`Some`].
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn is_some(&self) -> bool {
         !self.is_none()
     }
 
     /// Returns the value previously stored in this [`MonoBox`] and
     /// replaces it with `value`.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn swap(&mut self, value: Option<Box<T>>) -> Option<Box<T>> {
         let new = value.map(Box::into_raw).unwrap_or_else(core::ptr::null_mut);
         // We should be able to use `Relaxed` loads and store here,
@@ -102,14 +102,14 @@ impl<T> MonoBox<T> {
     }
 
     /// Gets the value stored in this [`MonoBox`], if any.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn as_ref(&self) -> Option<&T> {
         let ptr = self.ptr_or_null.load(Ordering::Acquire);
         unsafe { ptr.as_ref() }
     }
 
     /// Gets the value stored in this [`MonoBox`], if any.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn as_mut(&mut self) -> Option<&mut T> {
         let ptr = self.ptr_or_null.load(Ordering::Acquire);
         unsafe { ptr.as_mut() }
@@ -117,14 +117,14 @@ impl<T> MonoBox<T> {
 
     /// Takes the value out of this [`MonoBox`], leaving a [`None`] in
     /// its place.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn take(&mut self) -> Option<Box<T>> {
         self.swap(None)
     }
 
     /// Consumes this [`MonoBox`], returning the wrapped value, if
     /// any.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn into_inner(mut self) -> Option<Box<T>> {
         self.take()
     }
@@ -149,28 +149,28 @@ impl<T> core::fmt::Pointer for MonoBox<T> {
 }
 
 impl<T: core::ops::Deref> MonoBox<T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn as_deref(&self) -> Option<&T::Target> {
         self.as_ref().map(|t| t.deref())
     }
 }
 
 impl<T: core::ops::DerefMut> MonoBox<T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn as_deref_mut(&mut self) -> Option<&mut T::Target> {
         self.as_mut().map(|t| t.deref_mut())
     }
 }
 
 impl<'a, T> From<&'a MonoBox<T>> for Option<&'a T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(mono: &'a MonoBox<T>) -> Option<&T> {
         mono.as_ref()
     }
 }
 
 impl<'a, T> From<&'a mut MonoBox<T>> for Option<&'a mut T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(mono: &'a mut MonoBox<T>) -> Option<&mut T> {
         mono.as_mut()
     }
@@ -195,21 +195,21 @@ impl<T> From<MonoBox<T>> for Option<T> {
 }
 
 impl<T> From<Box<T>> for MonoBox<T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(value: Box<T>) -> MonoBox<T> {
         MonoBox::new(Some(value))
     }
 }
 
 impl<T> From<Option<Box<T>>> for MonoBox<T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(value: Option<Box<T>>) -> MonoBox<T> {
         MonoBox::new(value)
     }
 }
 
 impl<T> From<MonoBox<T>> for Option<Box<T>> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(mono: MonoBox<T>) -> Option<Box<T>> {
         mono.into_inner()
     }

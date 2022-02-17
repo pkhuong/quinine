@@ -27,7 +27,7 @@ impl<T> MonoArc<T> {
     ///
     /// Use [`Default::default()`] or [`MonoArc::empty()`] for a
     /// [`None`] initial value.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn new(inner: Option<Arc<T>>) -> Self {
         let ptr = inner.map(Arc::into_raw).unwrap_or_else(core::ptr::null);
 
@@ -37,26 +37,26 @@ impl<T> MonoArc<T> {
     }
 
     /// Returns a fresh [`MonoArc`] that holds [`None`].
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn empty() -> Self {
         Self::new(None)
     }
 
     /// Returns whether the [`MonoArc`]'s value is [`None`].
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn is_none(&self) -> bool {
         self.ptr_or_null.load(Ordering::Relaxed).is_null()
     }
 
     /// Returns whether the [`MonoArc`]'s value is [`Some`].
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn is_some(&self) -> bool {
         !self.is_none()
     }
 
     /// Returns the value previously stored in this [`MonoArc`] and
     /// replaces it with `value`.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn swap(&mut self, value: Option<Arc<T>>) -> Option<Arc<T>> {
         let new = value.map(Arc::into_raw).unwrap_or_else(core::ptr::null);
         // We should be able to use `Relaxed` loads and store here,
@@ -104,14 +104,14 @@ impl<T> MonoArc<T> {
     }
 
     /// Gets the value stored in this [`MonoArc`], if any.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn as_ref(&self) -> Option<&T> {
         let ptr = self.ptr_or_null.load(Ordering::Acquire);
         unsafe { ptr.as_ref() }
     }
 
     /// Gets a clone of the [`Arc`] stored in this [`MonoArc`], if any.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn get(&self) -> Option<Arc<T>> {
         let ptr = self.ptr_or_null.load(Ordering::Acquire) as *const T;
 
@@ -127,13 +127,13 @@ impl<T> MonoArc<T> {
 
     /// Takes the value out of this [`MonoArc`], leaving a [`None`] in
     /// its place.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn take(&mut self) -> Option<Arc<T>> {
         self.swap(None)
     }
 
     /// Consumes this [`MonoArc`], returning the wrapped value, if any.
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn into_inner(mut self) -> Option<Arc<T>> {
         self.take()
     }
@@ -172,14 +172,14 @@ impl<T> core::fmt::Pointer for MonoArc<T> {
 }
 
 impl<T: core::ops::Deref> MonoArc<T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     pub fn as_deref(&self) -> Option<&T::Target> {
         self.as_ref().map(|t| t.deref())
     }
 }
 
 impl<'a, T> From<&'a MonoArc<T>> for Option<&'a T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(mono: &'a MonoArc<T>) -> Option<&T> {
         mono.as_ref()
     }
@@ -198,21 +198,21 @@ impl<T> From<Option<T>> for MonoArc<T> {
 }
 
 impl<T> From<Arc<T>> for MonoArc<T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(value: Arc<T>) -> MonoArc<T> {
         MonoArc::new(Some(value))
     }
 }
 
 impl<T> From<Option<Arc<T>>> for MonoArc<T> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(value: Option<Arc<T>>) -> MonoArc<T> {
         MonoArc::new(value)
     }
 }
 
 impl<T> From<MonoArc<T>> for Option<Arc<T>> {
-    #[inline(always)]
+    #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(mono: MonoArc<T>) -> Option<Arc<T>> {
         mono.into_inner()
     }
