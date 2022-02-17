@@ -254,6 +254,33 @@ fn test_default() {
 }
 
 #[test]
+fn test_drop() {
+    use std::sync::atomic::AtomicUsize;
+
+    struct DropTracker<'a> {
+        counter: &'a AtomicUsize,
+    }
+
+    impl Drop for DropTracker<'_> {
+        fn drop(&mut self) {
+            self.counter.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    let counter = AtomicUsize::new(0);
+    let mono = MonoBox::new(Some(Box::new(DropTracker { counter: &counter })));
+
+    assert_eq!(counter.load(Ordering::Relaxed), 0);
+    std::mem::drop(mono);
+    assert_eq!(counter.load(Ordering::Relaxed), 1);
+
+    let mono: MonoBox<DropTracker> = Default::default();
+    assert_eq!(counter.load(Ordering::Relaxed), 1);
+    std::mem::drop(mono);
+    assert_eq!(counter.load(Ordering::Relaxed), 1);
+}
+
+#[test]
 fn test_upgrade() {
     let mono: MonoBox<Vec<usize>> = Default::default();
 
