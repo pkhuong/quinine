@@ -1,6 +1,8 @@
-use std::sync::atomic::AtomicPtr;
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
+extern crate alloc;
+
+use alloc::sync::Arc;
+use core::sync::atomic::AtomicPtr;
+use core::sync::atomic::Ordering;
 
 use crate::MonoBox;
 
@@ -27,7 +29,7 @@ impl<T> MonoArc<T> {
     /// [`None`] initial value.
     #[inline(always)]
     pub fn new(inner: Option<Arc<T>>) -> Self {
-        let ptr = inner.map(Arc::into_raw).unwrap_or_else(std::ptr::null);
+        let ptr = inner.map(Arc::into_raw).unwrap_or_else(core::ptr::null);
 
         Self {
             ptr_or_null: AtomicPtr::new(ptr as *mut _),
@@ -56,7 +58,7 @@ impl<T> MonoArc<T> {
     /// replaces it with `value`.
     #[inline(always)]
     pub fn swap(&mut self, value: Option<Arc<T>>) -> Option<Arc<T>> {
-        let new = value.map(Arc::into_raw).unwrap_or_else(std::ptr::null);
+        let new = value.map(Arc::into_raw).unwrap_or_else(core::ptr::null);
         // We should be able to use `Relaxed` loads and store here,
         // and rely on the ordering that guarantees `self` is `&mut`.
         // However, it's more obviously safe when every load and store
@@ -83,7 +85,7 @@ impl<T> MonoArc<T> {
         let ptr = Arc::into_raw(value);
 
         match self.ptr_or_null.compare_exchange(
-            std::ptr::null_mut(),
+            core::ptr::null_mut(),
             ptr as *mut _,
             Ordering::Release,
             Ordering::Relaxed,
@@ -139,7 +141,7 @@ impl<T> MonoArc<T> {
 
 impl<T> Drop for MonoArc<T> {
     fn drop(&mut self) {
-        std::mem::drop(self.take());
+        core::mem::drop(self.take());
     }
 }
 
@@ -157,19 +159,19 @@ impl<T> Clone for MonoArc<T> {
     }
 }
 
-impl<T: std::fmt::Debug> std::fmt::Debug for MonoArc<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(&self.as_ref(), f)
+impl<T: core::fmt::Debug> core::fmt::Debug for MonoArc<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(&self.as_ref(), f)
     }
 }
 
-impl<T> std::fmt::Pointer for MonoArc<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Pointer::fmt(&(self.ptr_or_null.load(Ordering::Relaxed) as *const T), f)
+impl<T> core::fmt::Pointer for MonoArc<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Pointer::fmt(&(self.ptr_or_null.load(Ordering::Relaxed) as *const T), f)
     }
 }
 
-impl<T: std::ops::Deref> MonoArc<T> {
+impl<T: core::ops::Deref> MonoArc<T> {
     #[inline(always)]
     pub fn as_deref(&self) -> Option<&T::Target> {
         self.as_ref().map(|t| t.deref())

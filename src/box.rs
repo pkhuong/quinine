@@ -1,5 +1,8 @@
-use std::sync::atomic::AtomicPtr;
-use std::sync::atomic::Ordering;
+extern crate alloc;
+
+use alloc::boxed::Box;
+use core::sync::atomic::AtomicPtr;
+use core::sync::atomic::Ordering;
 
 /// A [`MonoBox<T>`] is an atomic, lock-free, write-once
 /// [`Option<Box<T>>`].  Write-once means that a [`MonoBox`] can only
@@ -24,7 +27,7 @@ impl<T> MonoBox<T> {
     /// [`None`] initial value.
     #[inline(always)]
     pub fn new(inner: Option<Box<T>>) -> Self {
-        let ptr = inner.map(Box::into_raw).unwrap_or_else(std::ptr::null_mut);
+        let ptr = inner.map(Box::into_raw).unwrap_or_else(core::ptr::null_mut);
 
         Self {
             ptr_or_null: AtomicPtr::new(ptr),
@@ -53,7 +56,7 @@ impl<T> MonoBox<T> {
     /// replaces it with `value`.
     #[inline(always)]
     pub fn swap(&mut self, value: Option<Box<T>>) -> Option<Box<T>> {
-        let new = value.map(Box::into_raw).unwrap_or_else(std::ptr::null_mut);
+        let new = value.map(Box::into_raw).unwrap_or_else(core::ptr::null_mut);
         // We should be able to use `Relaxed` loads and store here,
         // and rely on the ordering that guarantees `self` is `&mut`.
         // However, it's more obviously safe when every load and store
@@ -80,7 +83,7 @@ impl<T> MonoBox<T> {
         let ptr = Box::into_raw(value);
 
         match self.ptr_or_null.compare_exchange(
-            std::ptr::null_mut(),
+            core::ptr::null_mut(),
             ptr,
             Ordering::Release,
             Ordering::Relaxed,
@@ -129,30 +132,30 @@ impl<T> MonoBox<T> {
 
 impl<T> Drop for MonoBox<T> {
     fn drop(&mut self) {
-        std::mem::drop(self.take())
+        core::mem::drop(self.take())
     }
 }
 
-impl<T: std::fmt::Debug> std::fmt::Debug for MonoBox<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(&self.as_ref(), f)
+impl<T: core::fmt::Debug> core::fmt::Debug for MonoBox<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(&self.as_ref(), f)
     }
 }
 
-impl<T> std::fmt::Pointer for MonoBox<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Pointer::fmt(&(self.ptr_or_null.load(Ordering::Relaxed) as *const T), f)
+impl<T> core::fmt::Pointer for MonoBox<T> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Pointer::fmt(&(self.ptr_or_null.load(Ordering::Relaxed) as *const T), f)
     }
 }
 
-impl<T: std::ops::Deref> MonoBox<T> {
+impl<T: core::ops::Deref> MonoBox<T> {
     #[inline(always)]
     pub fn as_deref(&self) -> Option<&T::Target> {
         self.as_ref().map(|t| t.deref())
     }
 }
 
-impl<T: std::ops::DerefMut> MonoBox<T> {
+impl<T: core::ops::DerefMut> MonoBox<T> {
     #[inline(always)]
     pub fn as_deref_mut(&mut self) -> Option<&mut T::Target> {
         self.as_mut().map(|t| t.deref_mut())

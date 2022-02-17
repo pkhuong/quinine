@@ -8,4 +8,9 @@ repository = "https://github.com/pkhuong/quinine"
 license = "Apache-2.0/MIT"
 edition = "2018"
 
+[features]
+default = []
+# We don't need std yet.
+std = []
+
 [dependencies]

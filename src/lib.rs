@@ -8,17 +8,18 @@
 //! readers and writers.
 //!
 //! Crates like [ArcSwap](https://crates.io/crates/arc-swap) offer
-//! optimised versions of [`RwLock<Arc<T>>`](std::sync::RwLock), for
-//! read-mostly workloads.  Quinine's containers are even more heavily
-//! biased away from writes ([`MonoBox`] and [`MonoArc`] can only be
-//! mutated once), and offer even lower overhead in return: stores
-//! require only a
-//! [`AtomicPtr::compare_exchange`](std::sync::atomic::AtomicPtr::compare_exchange),
+//! optimised versions of
+//! [`RwLock<Arc<T>>`](https://doc.rust-lang.org/std/sync/struct.RwLock.html),
+//! for read-mostly workloads.  Quinine's containers are even more
+//! heavily biased away from writes ([`MonoBox`] and [`MonoArc`] can
+//! only be mutated once), and offer even lower overhead in return:
+//! stores require only a
+//! [`AtomicPtr::compare_exchange`](core::sync::atomic::AtomicPtr::compare_exchange),
 //! and reads are plain
-//! [`Ordering::Acquire`](std::sync::atomic::Ordering) loads.  Of
-//! course, obtaining a full-blown [`Arc`](std::sync::Arc) incurs
+//! [`Ordering::Acquire`](core::sync::atomic::Ordering) loads.  Of
+//! course, obtaining a full-blown [`Arc`](alloc::sync::Arc) incurs
 //! reference counting overhead, just like a regular
-//! [`Arc::clone`](std::sync::Arc::clone).
+//! [`Arc::clone`](alloc::sync::Arc::clone).
 //!
 //! When containers are updated without locking, but only so long as
 //! the set of resources (e.g., memory allocations) owned by that
@@ -40,6 +41,11 @@
 //! change non-monotonically when a mutable reference (`&mut`) serves
 //! as a witness of single ownership.  For example, that's how
 //! containers can implement [`Drop::drop`].
+#![cfg_attr(not(any(feature = "std", test)), no_std)]
+
+#[cfg(doc)]
+extern crate alloc;
+
 mod arc;
 mod r#box;
 
