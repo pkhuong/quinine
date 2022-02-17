@@ -276,10 +276,18 @@ fn test_drop() {
     std::mem::drop(mono);
     assert_eq!(counter.load(Ordering::Relaxed), 1);
 
+    // Make sure `into_inner` doesn't double-drop.
+    let mono = MonoBox::new(Some(Box::new(DropTracker { counter: &counter })));
+
+    assert_eq!(counter.load(Ordering::Relaxed), 1);
+    std::mem::drop(mono.into_inner());
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
+
+    // Check that an empty `MonoBox` doesn't drop anything.
     let mono: MonoBox<DropTracker> = Default::default();
-    assert_eq!(counter.load(Ordering::Relaxed), 1);
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
     std::mem::drop(mono);
-    assert_eq!(counter.load(Ordering::Relaxed), 1);
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
 }
 
 #[test]
@@ -319,6 +327,8 @@ fn test_swap() {
     assert_eq!(mono.take(), Some(Box::new(vec![2])));
 
     assert!(mono.is_none());
+
+    assert_eq!(mono.take(), None);
 }
 
 #[test]

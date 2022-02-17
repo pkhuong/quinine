@@ -279,15 +279,34 @@ fn test_drop() {
 
     let counter = AtomicUsize::new(0);
     let mono = MonoArc::new(Some(Arc::new(DropTracker { counter: &counter })));
-
     assert_eq!(counter.load(Ordering::Relaxed), 0);
+
+    // These refcount increments and decrements should not trigger
+    // destruction.
+    std::mem::drop(mono.get());
+    assert_eq!(counter.load(Ordering::Relaxed), 0);
+    std::mem::drop(mono.clone());
+    assert_eq!(counter.load(Ordering::Relaxed), 0);
+
+    // Now we should destroy.
     std::mem::drop(mono);
     assert_eq!(counter.load(Ordering::Relaxed), 1);
 
+    // Make sure `into_inner` doesn't double-drop.
+    let mono = MonoArc::new(Some(Arc::new(DropTracker { counter: &counter })));
+    assert_eq!(counter.load(Ordering::Relaxed), 1);
+    std::mem::drop(mono.into_inner());
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
+
+    // Check that an empty `MonoArc` doesn't drop anything.
     let mono: MonoArc<DropTracker> = Default::default();
-    assert_eq!(counter.load(Ordering::Relaxed), 1);
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
+    std::mem::drop(mono.get());
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
+    std::mem::drop(mono.clone());
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
     std::mem::drop(mono);
-    assert_eq!(counter.load(Ordering::Relaxed), 1);
+    assert_eq!(counter.load(Ordering::Relaxed), 2);
 }
 
 #[test]
@@ -327,6 +346,8 @@ fn test_swap() {
     assert_eq!(mono.take(), Some(Arc::new(vec![2])));
 
     assert!(mono.is_none());
+
+    assert_eq!(mono.take(), None);
 }
 
 #[test]
