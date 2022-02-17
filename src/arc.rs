@@ -17,7 +17,6 @@ use crate::MonoBox;
 /// [`Option<Arc<T>>`].  This non-monotonic operation is safe because
 /// the mutable references guarantees no other thread can observe the
 /// transition.
-#[derive(Default)]
 pub struct MonoArc<T> {
     ptr_or_null: AtomicPtr<T>,
 }
@@ -142,6 +141,13 @@ impl<T> MonoArc<T> {
 impl<T> Drop for MonoArc<T> {
     fn drop(&mut self) {
         core::mem::drop(self.take());
+    }
+}
+
+impl<T> Default for MonoArc<T> {
+    #[cfg_attr(not(tarpaulin), inline(always))]
+    fn default() -> Self {
+        Self::empty()
     }
 }
 
