@@ -1,6 +1,6 @@
 [package]
 name = "quinine"
-version = "0.1.0"
+version = "0.2.0"
 description = "Atomic monotonic containers (Mono{Box,Arc})"
 keywords = ["atomic", "monotonic", "Arc", "Box", "container"]
 categories = ["concurrency", "data-structures", "memory-management"]
