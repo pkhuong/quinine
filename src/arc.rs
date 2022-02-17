@@ -252,6 +252,8 @@ fn test_some() {
     assert_eq!(mono.as_ref().unwrap(), &[1]);
     assert_eq!(&*mono.get().unwrap(), &[1]);
     assert_eq!(mono.clone().as_ref().unwrap(), &[1]);
+
+    assert_eq!(mono.into_inner(), Some(Arc::new(vec![1])));
 }
 
 #[test]
@@ -303,6 +305,14 @@ fn test_upgrade() {
 }
 
 #[test]
+fn test_store_value() {
+    let mono: MonoArc<Vec<usize>> = Default::default();
+
+    assert!(mono.store_value(vec![1]));
+    assert_eq!(mono.as_ref().unwrap(), &[1]);
+}
+
+#[test]
 fn test_swap() {
     let mut mono: MonoArc<Vec<usize>> = Default::default();
 
@@ -324,7 +334,7 @@ fn test_fmt() {
     let mono = MonoArc::<()>::empty();
 
     assert_eq!(format!("{:?}", &mono), "None");
-    eprintln!("as a pointer: {:p}", mono);
+    assert_eq!(format!("as a pointer: {:p}", mono), "as a pointer: 0x0");
 }
 
 #[test]
@@ -342,15 +352,28 @@ fn test_conversions() {
 
     let mono: MonoArc<_> = "foo".to_string().into();
     assert_eq!(mono.as_deref(), Some("foo"));
+    let val: Option<&String> = (&mono).into();
+    assert_eq!(val, Some(&"foo".to_string()));
+
+    let mono: MonoArc<String> = Some("foo".to_string()).into();
+    assert_eq!(mono.as_deref(), Some("foo"));
 
     let mono: MonoArc<String> = Arc::new("bar".to_string()).into();
     assert_eq!(mono.as_deref(), Some("bar"));
 
-    let mono: MonoArc<String> = Option::<Arc<String>>::None.into();
+    let mono: MonoArc<String> = Some(Arc::new("bar".to_string())).into();
+    assert_eq!(mono.as_deref(), Some("bar"));
+
+    let mut mono: MonoArc<String> = Option::<Arc<String>>::None.into();
+    mono.swap(Some(Arc::new("baz".to_string())));
     let val: Option<Arc<String>> = mono.into();
-    assert_eq!(val, None);
+    assert_eq!(val, Some(Arc::new("baz".to_string())));
 
     let boxed = MonoBox::<String>::empty();
     let mono: MonoArc<String> = boxed.into();
     assert!(mono.is_none());
+
+    let boxed: MonoBox<String> = "quux".to_string().into();
+    let mono: MonoArc<String> = boxed.into();
+    assert_eq!(mono.as_deref(), Some("quux"));
 }

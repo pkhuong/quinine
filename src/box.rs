@@ -194,12 +194,6 @@ impl<T> From<Option<T>> for MonoBox<T> {
     }
 }
 
-impl<T> From<MonoBox<T>> for Option<T> {
-    fn from(mono: MonoBox<T>) -> Option<T> {
-        mono.into_inner().map(|b| *b)
-    }
-}
-
 impl<T> From<Box<T>> for MonoBox<T> {
     #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(value: Box<T>) -> MonoBox<T> {
@@ -211,6 +205,12 @@ impl<T> From<Option<Box<T>>> for MonoBox<T> {
     #[cfg_attr(not(tarpaulin), inline(always))]
     fn from(value: Option<Box<T>>) -> MonoBox<T> {
         MonoBox::new(value)
+    }
+}
+
+impl<T> From<MonoBox<T>> for Option<T> {
+    fn from(mono: MonoBox<T>) -> Option<T> {
+        mono.into_inner().map(|b| *b)
     }
 }
 
@@ -244,6 +244,8 @@ fn test_some() {
 
     mono.as_mut().unwrap().push(2);
     assert_eq!(mono.as_mut().unwrap(), &[1, 2]);
+
+    assert_eq!(mono.into_inner(), Some(Box::new(vec![1, 2])));
 }
 
 #[test]
@@ -295,6 +297,14 @@ fn test_upgrade() {
 }
 
 #[test]
+fn test_store_value() {
+    let mono: MonoBox<Vec<usize>> = Default::default();
+
+    assert!(mono.store_value(vec![1]));
+    assert_eq!(mono.as_ref().unwrap(), &[1]);
+}
+
+#[test]
 fn test_swap() {
     let mut mono: MonoBox<Vec<usize>> = Default::default();
 
@@ -316,7 +326,7 @@ fn test_fmt() {
     let mono = MonoBox::<()>::empty();
 
     assert_eq!(format!("{:?}", &mono), "None");
-    eprintln!("as a pointer: {:p}", mono);
+    assert_eq!(format!("as a pointer: {:p}", mono), "as a pointer: 0x0");
 }
 
 #[test]
@@ -335,12 +345,26 @@ fn test_conversions() {
     let mono: MonoBox<_> = "foo".to_string().into();
     assert_eq!(mono.as_deref(), Some("foo"));
 
+    let mono: MonoBox<_> = Some("foo".to_string()).into();
+    {
+        let as_string: Option<&String> = (&mono).into();
+        assert_eq!(as_string, Some(&"foo".to_string()));
+
+        let to_string: Option<String> = mono.into();
+        assert_eq!(to_string, Some("foo".to_string()));
+    }
+
     let mono: MonoBox<String> = Box::new("bar".to_string()).into();
     assert_eq!(mono.as_deref(), Some("bar"));
 
     let mono: MonoBox<String> = Option::<Box<String>>::None.into();
     let val: Option<Box<String>> = mono.into();
     assert_eq!(val, None);
+
+    let mono: MonoBox<String> = Some(Box::new("baz".to_string())).into();
+    assert_eq!(mono.as_deref(), Some("baz"));
+    let val: Option<Box<String>> = mono.into();
+    assert_eq!(val, Some(Box::new("baz".to_string())));
 
     let boxed = MonoBox::<String>::empty();
     let mono: MonoBox<String> = boxed.into();
@@ -359,4 +383,14 @@ fn test_mut_conversions() {
 
     let as_mut: Option<&mut Vec<u8>> = (&mut mono).into();
     assert_eq!(as_mut, None);
+
+    let mut mono: MonoBox<Vec<u8>> = vec![1].into();
+    let mut vec = vec![1];
+    let some: Option<&mut [u8]> = Some(&mut vec);
+
+    let as_mut: Option<&mut [u8]> = mono.as_deref_mut();
+    assert_eq!(as_mut, some);
+
+    let as_mut: Option<&mut Vec<u8>> = (&mut mono).into();
+    assert_eq!(as_mut, Some(&mut vec));
 }

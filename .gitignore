@@ -7,3 +7,5 @@
 /target
 Cargo.lock
 tarpaulin-report.html
+/mutants.out
+/mutants.out.old
