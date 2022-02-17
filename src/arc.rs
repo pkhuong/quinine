@@ -289,7 +289,7 @@ fn test_fmt() {
     let mono = MonoArc::<()>::empty();
 
     assert_eq!(format!("{:?}", &mono), "None");
-    eprintln!("as a pointer: {:p}", &mono);
+    eprintln!("as a pointer: {:p}", mono);
 }
 
 #[test]
